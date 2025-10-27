@@ -1,0 +1,22 @@
+{
+  "chatStart": "2024-01-15T10:30:00Z",
+  "id": "8ded6272-c521-4ef3-8cda-229483affb34",
+  "messages": [
+    {
+      "id": "msg_001",
+      "role": "system",
+      "content": "You are a helpful assistant."
+    },
+    {
+      "id": "msg_002",
+      "role": "user",
+      "content": "Show me a cat",
+      "imageUrl": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+    },
+    {
+      "id": "msg_003",
+      "role": "system",
+      "content": "You are a helpful assistant."
+    }
+  ]
+}
