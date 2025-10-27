@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Token Optimizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .upload-zone {
+            border: 3px dashed #ccc;
+            border-radius: 8px;
+            padding: 60px 20px;
+            text-align: center;
+            background: #fafafa;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 30px;
+        }
+
+        .upload-zone.dragover {
+            border-color: #4CAF50;
+            background: #f0f8f0;
+        }
+
+        .upload-zone:hover {
+            border-color: #999;
+            background: #f0f0f0;
+        }
+
+        .upload-zone p {
+            color: #666;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+
+        .upload-zone .icon {
+            font-size: 48px;
+            color: #999;
+            margin-bottom: 10px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: #45a049;
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #2196F3;
+        }
+
+        .btn-secondary:hover {
+            background: #0b7dda;
+        }
+
+        .stats {
+            display: none;
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .stats.visible {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .stat-reduction {
+            color: #4CAF50;
+        }
+
+        .results {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .results.visible {
+            display: block;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .results-header h2 {
+            font-size: 20px;
+            color: #333;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .json-display {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            max-height: 400px;
+            overflow: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error.visible {
+            display: block;
+        }
+
+        .success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success.visible {
+            display: block;
+        }
+
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .footer a {
+            color: #2196F3;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>JSON Token Optimizer</h1>
+        <p class="subtitle">Reduce token count in JSON conversation files by removing unnecessary data</p>
+
+        <div id="error" class="error"></div>
+        <div id="success" class="success"></div>
+
+        <div id="uploadZone" class="upload-zone">
+            <div class="icon">📁</div>
+            <p><strong>Drag and drop your JSON file here</strong></p>
+            <p>or</p>
+            <button class="btn" onclick="document.getElementById('fileInput').click()">Browse Files</button>
+            <input type="file" id="fileInput" accept=".json" />
+        </div>
+
+        <div id="stats" class="stats">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="originalTokens">0</div>
+                    <div class="stat-label">Original Tokens</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="optimizedTokens">0</div>
+                    <div class="stat-label">Optimized Tokens</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value stat-reduction" id="reduction">0%</div>
+                    <div class="stat-label">Reduction</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="results" class="results">
+            <div class="results-header">
+                <h2>Optimized JSON</h2>
+                <div class="button-group">
+                    <button class="btn btn-secondary" id="copyBtn">Copy to Clipboard</button>
+                    <button class="btn" id="downloadBtn">Download JSON</button>
+                </div>
+            </div>
+            <div class="json-display" id="jsonDisplay"></div>
+        </div>
+
+        <div class="footer">
+            <p>Built for <a href="https://github.com/anthropics/claude-code" target="_blank">Claude Code</a> |
+            <a href="https://github.com/saulkropman/jsonminify" target="_blank">View on GitHub</a></p>
+        </div>
+    </div>
+
+    <script>
+        let originalData = null;
+        let optimizedData = null;
+        let originalFilename = '';
+
+        // Token counting approximation (roughly 4 characters = 1 token)
+        function estimateTokens(text) {
+            return Math.ceil(text.length / 4);
+        }
+
+        // Show error message
+        function showError(message) {
+            const errorEl = document.getElementById('error');
+            errorEl.textContent = message;
+            errorEl.classList.add('visible');
+            setTimeout(() => errorEl.classList.remove('visible'), 5000);
+        }
+
+        // Show success message
+        function showSuccess(message) {
+            const successEl = document.getElementById('success');
+            successEl.textContent = message;
+            successEl.classList.add('visible');
+            setTimeout(() => successEl.classList.remove('visible'), 3000);
+        }
+
+        // Remove fields recursively
+        function removeFields(obj, fieldsToRemove) {
+            if (Array.isArray(obj)) {
+                return obj.map(item => removeFields(item, fieldsToRemove));
+            } else if (obj !== null && typeof obj === 'object') {
+                const newObj = {};
+                for (const key in obj) {
+                    if (!fieldsToRemove.includes(key)) {
+                        newObj[key] = removeFields(obj[key], fieldsToRemove);
+                    }
+                }
+                return newObj;
+            }
+            return obj;
+        }
+
+        // Replace imageUrl values recursively
+        function replaceImageUrls(obj) {
+            if (Array.isArray(obj)) {
+                return obj.map(item => replaceImageUrls(item));
+            } else if (obj !== null && typeof obj === 'object') {
+                const newObj = {};
+                for (const key in obj) {
+                    if (key === 'imageUrl' && typeof obj[key] === 'string') {
+                        newObj[key] = '[removed]';
+                    } else {
+                        newObj[key] = replaceImageUrls(obj[key]);
+                    }
+                }
+                return newObj;
+            }
+            return obj;
+        }
+
+        // Deduplicate messages (system and assistant)
+        function deduplicateMessages(data) {
+            if (!data.messages || !Array.isArray(data.messages)) {
+                return data;
+            }
+
+            const systemContentMap = new Map();
+            const assistantContentMap = new Map();
+            let systemCounter = 0;
+            let assistantCounter = 0;
+
+            const optimizedMessages = data.messages.map(msg => {
+                // Handle system message deduplication
+                if (msg.role === 'system' && msg.content) {
+                    const content = msg.content;
+
+                    if (systemContentMap.has(content)) {
+                        // This is a duplicate, use reference
+                        return {
+                            role: 'system',
+                            contentRef: systemContentMap.get(content)
+                        };
+                    } else {
+                        // First occurrence, create ID
+                        const id = `sys_${systemCounter++}`;
+                        systemContentMap.set(content, id);
+                        return {
+                            ...msg,
+                            _id: id
+                        };
+                    }
+                }
+
+                // Handle assistant message deduplication
+                if (msg.role === 'assistant' && msg.content) {
+                    const content = msg.content;
+
+                    if (assistantContentMap.has(content)) {
+                        // This is a duplicate, use reference
+                        return {
+                            role: 'assistant',
+                            contentRef: assistantContentMap.get(content)
+                        };
+                    } else {
+                        // First occurrence, create ID
+                        const id = `asst_${assistantCounter++}`;
+                        assistantContentMap.set(content, id);
+                        return {
+                            ...msg,
+                            _id: id
+                        };
+                    }
+                }
+
+                // Return other messages as-is
+                return msg;
+            });
+
+            return {
+                ...data,
+                messages: optimizedMessages
+            };
+        }
+
+        // Main optimization function
+        function optimizeJSON(data) {
+            let optimized = { ...data };
+
+            // Step 1: Remove chatStart field
+            if ('chatStart' in optimized) {
+                delete optimized.chatStart;
+            }
+
+            // Step 2: Strip image data
+            optimized = replaceImageUrls(optimized);
+
+            // Step 3: Deduplicate messages (system and assistant)
+            optimized = deduplicateMessages(optimized);
+
+            // Step 4: Remove id and sessionId fields (but preserve _id from deduplication)
+            const fieldsToRemove = ['id', 'sessionId'];
+            optimized = removeFields(optimized, fieldsToRemove);
+
+            return optimized;
+        }
+
+        // Process file
+        function processFile(file) {
+            originalFilename = file.name;
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                try {
+                    // Parse JSON
+                    originalData = JSON.parse(e.target.result);
+
+                    // Optimize
+                    optimizedData = optimizeJSON(originalData);
+
+                    // Calculate tokens
+                    const originalJSON = JSON.stringify(originalData, null, 2);
+                    const optimizedJSON = JSON.stringify(optimizedData); // Minified
+
+                    const originalTokenCount = estimateTokens(originalJSON);
+                    const optimizedTokenCount = estimateTokens(optimizedJSON);
+                    const reduction = Math.round(((originalTokenCount - optimizedTokenCount) / originalTokenCount) * 100);
+
+                    // Update UI
+                    document.getElementById('originalTokens').textContent = originalTokenCount.toLocaleString();
+                    document.getElementById('optimizedTokens').textContent = optimizedTokenCount.toLocaleString();
+                    document.getElementById('reduction').textContent = reduction + '%';
+                    document.getElementById('stats').classList.add('visible');
+
+                    // Display optimized JSON
+                    document.getElementById('jsonDisplay').textContent = optimizedJSON;
+                    document.getElementById('results').classList.add('visible');
+
+                    showSuccess('JSON optimized successfully!');
+                } catch (error) {
+                    showError('Error parsing JSON: ' + error.message);
+                }
+            };
+
+            reader.onerror = function() {
+                showError('Error reading file');
+            };
+
+            reader.readAsText(file);
+        }
+
+        // Drag and drop handlers
+        const uploadZone = document.getElementById('uploadZone');
+
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                if (file.type === 'application/json' || file.name.endsWith('.json')) {
+                    processFile(file);
+                } else {
+                    showError('Please upload a JSON file');
+                }
+            }
+        });
+
+        // File input handler
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                processFile(file);
+            }
+        });
+
+        // Copy to clipboard
+        document.getElementById('copyBtn').addEventListener('click', () => {
+            const jsonText = document.getElementById('jsonDisplay').textContent;
+            navigator.clipboard.writeText(jsonText).then(() => {
+                showSuccess('Copied to clipboard!');
+            }).catch(() => {
+                showError('Failed to copy to clipboard');
+            });
+        });
+
+        // Download file
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            const jsonText = document.getElementById('jsonDisplay').textContent;
+            const blob = new Blob([jsonText], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = originalFilename.replace('.json', '') + '.optimized.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showSuccess('File downloaded!');
+        });
+    </script>
+</body>
+</html>
